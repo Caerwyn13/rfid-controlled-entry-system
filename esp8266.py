@@ -10,8 +10,8 @@ server_socket.bind((host, port))
 print(f"Listening on {host}:{port}...")
 
 while True:
-  client_socket, addr = server_socket.accept()
-  print(f"Connection from {addr}")
+  client_socket, address = server_socket.accept()
+  print(f"Connection from {address}")
 
   data = client_socket.recv(1024).decode('utf-8')
   if data:
