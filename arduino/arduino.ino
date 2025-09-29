@@ -5,6 +5,9 @@
 #define SS_PIN 10
 #define RST_PIN 9
 
+#define GREEN_LED 7
+#define RED_LED 6
+
 // Set up RFID reader
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
@@ -22,6 +25,10 @@ void setup() {
   SPI.begin();
   mfrc522.PCD_init();
 
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(GREEN_LED, OUTPUT);
+  pinMode(RED_LED, OUTPUT);
+
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Connecting to WiFi...");
@@ -30,6 +37,10 @@ void setup() {
 }
 
 void loop() {
+  // Turn LEDs off
+  digitalWrite(GREEN_LED, LOW);
+  digitalWrite(RED_LED, LOW);
+
   // Look for new cards
   if (!mfrc522.PICC_IsNewCardPresent()) { return; }    // No card, so return, and don't send data
 
@@ -53,9 +64,11 @@ void loop() {
   if (content.substring(1) == "  BD 31 15 2B") {  //TODO: Replace with EEPROM list of authorised cards
     Serial.println("Access granted");
     Serial.println();
+    digitalWrite(GREEN_LED, HIGH);
   } else {
     Serial.println("Access denied");
     Serial.println();
+    digitalWrite(RED_LED, HIGH);
   
   if (client.connect(host, port)) {
     client.println("Hello!");    //TODO: Replace with data to send
