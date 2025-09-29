@@ -29,10 +29,8 @@ void setup() {
   pinMode(GREEN_LED, OUTPUT);
   pinMode(RED_LED, OUTPUT);
 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi...");
-  }
+  Serial.println("Connecting to WiFi...");
+  while (WiFi.status() != WL_CONNECTED) {}    // Loop to stop progression until WiFi is connected
   Serial.println("Connected to WiFi!");
 }
 
