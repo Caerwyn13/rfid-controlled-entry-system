@@ -82,6 +82,12 @@ void loop() {
   delay(2000);    // Send data every 2 seconds
 }
 
+void zeroOutEEPROM() {
+  for (int i = 0; i < EEPROM.length(); ++i) {
+    EEPROM.write(i, 0);
+  }
+}
+
 // Helper function to compute 1-byte checksum (XOR of length + UID bytes)
 uint8_t computeChecksum(const uint8_t* data, uint8_t len) {
   uint8_t cs = 0;
