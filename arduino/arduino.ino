@@ -125,7 +125,7 @@ bool writeRFIDtoEEPROM(uint16_t slot, const uint8_t* uid, uint8_t uidLen) {
 
 // Read a UID from a slot
 // Return value is whether it was successful
-bool readRFIDFromEEPROM(uint16_t slot, uint8_t* outUid, uint8_t* outLen) {
+bool readRFIDFromEEPROM(uint16_t slot, uint8_t* outUid, uint8_t* outLen, bool zeroOut) {
   if (!validSlot(slot)) return false;
 
   uint16_t base = slot * SLOT_SIZE;
@@ -141,7 +141,9 @@ bool readRFIDFromEEPROM(uint16_t slot, uint8_t* outUid, uint8_t* outLen) {
   }
 
   // zero out the rest (optional)
-  for (uint8_t i = len; i < MAX_UID_LEN; ++i) outUid[i] = 0;
+  if (zeroOut) {
+    for (uint8_t i = len; i < MAX_UID_LEN; ++i) outUid[i] = 0;
+  }
 
   uint8_t storedCs = EEPROM.read(base + 1 + MAX_UID_LEN);
   uint8_t calcCs = computeChecksum(outUid, len);
