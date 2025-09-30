@@ -119,4 +119,37 @@ bool writeRFIDtoEEPROM(uint16_t slot, const uint8_t* uid, uint8_t uidLen) {
 
   // Write checksum
   EEPROM.update(base + 1 + MAX_UID_LEN, checksum);
+
+  return true;
+}
+
+// Read a UID from a slot
+// Return value is whether it was successful
+bool readRFIDFromEEPROM(uint16_t slot, uint8_t* outUid, uint8_t* outLen) {
+  if (!validSlot(slot)) return false;
+
+  uint16_t base = slot * SLOT_SIZE;
+  uint8_t len = EEPROM.read(base + 0);
+  if (len == 0 || len > MAX_UID_LEN) {
+    // 0 => empty slot or invalid length
+    return false;
+  }
+
+  // Read UID
+  for (uint8_t i = 0; i < len; ++i) {
+    outUid[i] = EEPROM.read(base + 1 + i);
+  }
+
+  // zero out the rest (optional)
+  for (uint8_t i = len; i < MAX_UID_LEN; ++i) outUid[i] = 0;
+
+  uint8_t storedCs = EEPROM.read(base + 1 + MAX_UID_LEN);
+  uint8_t calcCs = computeChecksum(outUid, len);
+  if (storedCs != calcCs) {
+    // Checksum invalid => corrupted UID
+    return false;
+  }
+
+  *outLen = len;
+  return true;
 }
