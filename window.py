@@ -1,8 +1,9 @@
-import matplotlib as matplot
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbat2Tk)
-from matplotlib.figure import Figure
 import tkinter as tk
 from tkinter import ttk
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, 
+NavigationToolbar2Tk)
+
+from database import plotting
 
 class App():
     def __init__(self):
@@ -21,8 +22,6 @@ class App():
         self.root.geometry(f"{self.window_width}x{self.window_height}+{centre_x}+{centre_y}")
         self.root.resizable(True, True)
         self.root.iconbitmap("assets/main_window.ico")
-
-        self.setup_buttons()
 
         # Set up tab control
         self.tab_control = ttk.Notebook(self.root)
@@ -44,7 +43,9 @@ class App():
         #TODO: Align these tabs to the right
         self.tab_control.add(self.functions_tab, text = "Functions")
         self.tab_control.add(self.view_tab, text = "View")
-        self.tab_control.grid(row=1, columnspan=1)
+        self.tab_control.grid(row=0, column=0, columnspan=1)
+
+        self.setup_buttons()
 
         self.style = ttk.Style()
         self.style.configure("TNotebook.Tab", padding=(20, 5))
@@ -54,23 +55,35 @@ class App():
     def setup_buttons(self):
         # Logout button
         #TODO: Style this button to look not so out-of-place in tab control
-        #TODO: Where's my button? :(
-        self.logout_icon = tk.PhotoImage(file="assets/logout.png").subsample(25, 25)
+        self.logout_icon = tk.PhotoImage(file="assets/logout.png").subsample(18, 15)
 
         self.logout_button = tk.Button(
             self.root,
             image=self.logout_icon,
             text="Log Out",
             compound=tk.LEFT,
+            
             command=self.root.destroy
-        ).grid(row=1)
+        ).grid(row=0, column=1, sticky="e", padx=2*self.window_width-50, pady=0)
+
+        self.plot_button = tk.Button(
+            self.home_tab,
+            height = 2,
+            width = 10,
+            text = "Plot",
+            command = self.plot_test,
+        ).grid(column=0, row=0, padx=30, pady=30) 
 
 
-    def setup_home_tab(self):
-        home_plot_button = tk.Button(master = self.root,
-                                     height = 2,
-                                     width = 10,
-                                     text = "Plot")
+    def plot_test(self):
+        fig = plotting.testPlot()
+        canvas = FigureCanvasTkAgg(fig, master=self.home_tab)  
+        canvas.draw()
+        canvas.get_tk_widget().grid(row=0, column=0)
+
+        toolbar = NavigationToolbar2Tk(canvas, self.home_tab)
+        toolbar.update()
+        canvas.get_tk_widget().grid(row=0, column=0)
 
 
     def run(self):
