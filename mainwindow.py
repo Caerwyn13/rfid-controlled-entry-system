@@ -5,12 +5,13 @@ NavigationToolbar2Tk)
 
 from database import plotting
 
+window_scale = 3.5
+
 class App():
     def __init__(self):
         self.root = tk.Tk()
-
-        self.window_width = 300
-        self.window_height = 200
+        self.window_width = int(300 * window_scale)
+        self.window_height = int(200 * window_scale)
         self.screen_width = self.root.winfo_screenwidth()
         self.screen_height = self.root.winfo_screenheight()
 
@@ -50,6 +51,8 @@ class App():
         self.style = ttk.Style()
         self.style.configure("TNotebook.Tab", padding=(20, 5))
 
+        self.plot_test()
+
 
     
     def setup_buttons(self):
@@ -66,24 +69,15 @@ class App():
             command=self.root.destroy
         ).grid(row=0, column=1, sticky="e", padx=2*self.window_width-50, pady=0)
 
-        self.plot_button = tk.Button(
-            self.home_tab,
-            height = 2,
-            width = 10,
-            text = "Plot",
-            command = self.plot_test,
-        ).grid(column=0, row=0, padx=30, pady=30) 
-
-
     def plot_test(self):
-        fig = plotting.testPlot()
-        canvas = FigureCanvasTkAgg(fig, master=self.home_tab)  
+        graph_plot = plotting.BarchartPlot()
+        canvas = FigureCanvasTkAgg(graph_plot, master=self.home_tab)  
         canvas.draw()
         canvas.get_tk_widget().grid(row=0, column=0)
 
-        toolbar = NavigationToolbar2Tk(canvas, self.home_tab)
+        toolbar = NavigationToolbar2Tk(canvas, self.home_tab, pack_toolbar=False)   # False as 'grid' is used instead of 'pack'
         toolbar.update()
-        canvas.get_tk_widget().grid(row=0, column=0)
+        canvas.get_tk_widget().grid(row=0, column=1)
 
 
     def run(self):
@@ -96,5 +90,7 @@ def main():
     tkWindow.run()
 
 
+# Run this file to skip the login
+# TODO: DELETE ONCE TESTING IS FINISHED
 if __name__ == "__main__":
     main()
