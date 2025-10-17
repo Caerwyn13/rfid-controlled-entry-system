@@ -17,4 +17,4 @@ while True:
   if data:
     print(f"Received: {data}")
 
-  client_socket.close(0
+  # client_socket.close(0)
