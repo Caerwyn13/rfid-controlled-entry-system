@@ -1,0 +1,21 @@
+DROP TABLE IF EXISTS user;
+DROP TABLE IF EXISTS accessLog;
+
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    fname TEXT NOT NULL,
+    lname TEXT NOT NULL,
+    RFID_key TEXT,
+    username TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL
+);
+
+CREATE TABLE accessLog (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    RFID_key TEXT NOT NULL,
+    accessed TIMESTAMP NOT NULL,
+    received TIMESTAMP NOT NULL,
+    actiontype TEXT NOT NULL,
+    is_authorised BOOLEAN,
+    FOREIGN KEY (RFID_key) REFERENCES users(RFID_key)
+);
