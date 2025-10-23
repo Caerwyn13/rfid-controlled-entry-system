@@ -6,6 +6,8 @@ Opens up a login window
 import tkinter as tk
 from tkinter import messagebox
 
+import requests
+
 import mainwindow
 
 
@@ -26,16 +28,26 @@ root.resizable(True, True)
 root.iconbitmap("assets/main_window.ico")
 
 # Validate login input
-# TODO: Make this more secure
 def validate_login():
     userid = username_entry.get()
     password = password_entry.get()
 
-    if userid == "admin" and password == "pass":
-        root.destroy()
-        mainwindow.main()
-    else:
-        messagebox.showerror("Login Failed", "Invalid username or password")
+    # Send the username and password to the Flask server for validation
+    url = 'http://127.0.0.1:5000/auth/validate_credentials'  #! May need to be updated
+    data = {'username': userid, 'password': password}
+
+    try:
+        response = requests.post(url, data=data)
+
+        if response.status_code == 200:  # Success (Validation passed)
+            root.destroy()  # Close the login window
+            mainwindow.main()  # Call the main window function
+        else:  # Failed (Validation failed)
+            error_message = response.json().get("message", "Unknown error")
+            messagebox.showerror("Login Failed", error_message)
+    
+    except requests.exceptions.RequestException as e:
+        messagebox.showerror("Error", f"Error connecting to server: {e}")
 
 
 # Username entry
