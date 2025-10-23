@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Execute SQL Query</title>
+</head>
+<body>
+    <h1>Execute SQL Query</h1>
+    
+    <form method="POST">
+        <label for="sql_query">Enter your SQL Query:</label><br>
+        <textarea id="sql_query" name="sql_query" rows="4" cols="50"></textarea><br><br>
+        <button type="submit">Execute</button>
+    </form>
+
+    {% if error %}
+        <h2 style="color: red;">Error: {{ error }}</h2>
+    {% endif %}
+
+    {% if results %}
+        <h2>Query Results:</h2>
+        <table border="1">
+            <thead>
+                <tr>
+                    {% for column in results[0].keys() %}
+                        <th>{{ column }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in results %}
+                    <tr>
+                        {% for column in row.keys() %}
+                            <td>{{ row[column] }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</body>
+</html>
