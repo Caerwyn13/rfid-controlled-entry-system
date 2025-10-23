@@ -3,7 +3,7 @@ from tkinter import ttk
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, 
 NavigationToolbar2Tk)
 
-from database import plotting
+from flaskr import plotting
 
 window_scale = 3.5
 
@@ -58,16 +58,15 @@ class App():
     def setup_buttons(self):
         # Logout button
         #TODO: Style this button to look not so out-of-place in tab control
-        self.logout_icon = tk.PhotoImage(file="assets/logout.png").subsample(18, 15)
+        self.logout_icon = tk.PhotoImage(file="assets/logout.png").subsample(15, 15)
 
         self.logout_button = tk.Button(
             self.root,
             image=self.logout_icon,
             text="Log Out",
             compound=tk.LEFT,
-            
             command=self.root.destroy
-        ).grid(row=0, column=1, sticky="e", padx=2*self.window_width-50, pady=0)
+        ).grid(row=0, column=0, sticky="e", padx=0, pady=0)
 
     def plot_test(self):
         graph_plot = plotting.BarchartPlot()
@@ -90,7 +89,6 @@ def main():
     tkWindow.run()
 
 
-# Run this file to skip the login
-# TODO: DELETE ONCE TESTING IS FINISHED
-if __name__ == "__main__":
+#TODO: Delete
+if __name__ == '__main__':
     main()
