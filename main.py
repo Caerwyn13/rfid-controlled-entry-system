@@ -27,13 +27,14 @@ root.geometry(f"{window_width}x{window_height}+{centre_x}+{centre_y}")
 root.resizable(True, True)
 root.iconbitmap("assets/main_window.ico")
 
+
 # Validate login input
 def validate_login():
     userid = username_entry.get()
     password = password_entry.get()
 
     # Send the username and password to the Flask server for validation
-    url = 'http://127.0.0.1:5000/auth/validate_credentials'  #! May need to be updated
+    url = 'http://127.0.0.1:5000/auth/validate_credentials'
     data = {'username': userid, 'password': password}
 
     try:
@@ -41,7 +42,7 @@ def validate_login():
 
         if response.status_code == 200:  # Success (Validation passed)
             root.destroy()  # Close the login window
-            mainwindow.main()  # Call the main window function
+            mainwindow.main(userid)  # Call the main window function
         else:  # Failed (Validation failed)
             error_message = response.json().get("message", "Unknown error")
             messagebox.showerror("Login Failed", error_message)
