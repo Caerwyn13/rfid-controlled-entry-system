@@ -6,6 +6,33 @@ from flaskr.db import get_db
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
+departments = {
+    1: 'Administration',
+    2: 'Marketing',
+    3: 'Purchasing',
+    4: 'Human Resources',
+    5: 'Shipping',
+    6: 'IT',
+    7: 'Public Relations',
+    8: 'Sales',
+    9: 'Executive',
+    10: 'Finance',
+    11: 'Accounting',
+    12: 'Treasury',
+    13: 'Shareholder Services',
+    14: 'Manufacturing',
+    15: 'Contracting',
+    16: 'Operational Security',
+    17: 'NOC',
+    18: 'Helpdesk',
+    19: 'Recruiting'
+}
+
+def get_key_by_value(department_dict, value):
+    for key, val in department_dict.items():
+        if val == value:
+            return key
+    return None  # Return None if the value is not found
 
 # Register form for accounts
 @bp.route('/register', methods=('GET', 'POST'))
@@ -13,6 +40,7 @@ def register():
     if request.method == 'POST':
         fname = request.form.get('fname')
         lname = request.form.get('lname')
+        department = request.form.get('department')
         username = request.form.get('username')
         password = request.form.get('password')
         db = get_db()
@@ -26,8 +54,8 @@ def register():
         if error is None:
             try:
                 db.execute(
-                    "INSERT INTO users (fname, lname, username, password) VALUES (?, ?, ?, ?)",
-                    (fname, lname, username, generate_password_hash(password))
+                    "INSERT INTO users (fname, lname, username, password, department_id) VALUES (?, ?, ?, ?, ?)",
+                    (fname.lower(), lname.lower(), username, generate_password_hash(password), get_key_by_value(departments, department.title()))
                 )
                 db.commit()
             except db.IntegrityError:
