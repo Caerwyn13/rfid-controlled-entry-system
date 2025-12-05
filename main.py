@@ -1,17 +1,13 @@
-"""
-Entry point of the program
-Opens up a login window
-"""
-
 import tkinter as tk
 from tkinter import messagebox
-
 import requests
-
 import mainwindow
+from flaskr import create_app 
 
+# Initialize Flask app instance
+flask_app = create_app() 
 
-# Create root window
+# Create root window for Tkinter
 root = tk.Tk()
 root.title("Log in | Carpal Inc.")
 
@@ -20,13 +16,12 @@ window_height = 200
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 
-centre_x = int(screen_width/2 - window_width/2)
-centre_y = int(screen_height/2 - window_height/2)
+centre_x = int(screen_width / 2 - window_width / 2)
+centre_y = int(screen_height / 2 - window_height / 2)
 
 root.geometry(f"{window_width}x{window_height}+{centre_x}+{centre_y}")
 root.resizable(True, True)
 root.iconbitmap("assets/main_window.ico")
-
 
 # Validate login input
 def validate_login():
@@ -42,7 +37,7 @@ def validate_login():
 
         if response.status_code == 200:  # Success (Validation passed)
             root.destroy()  # Close the login window
-            mainwindow.main(userid)  # Call the main window function
+            mainwindow.main(userid, flask_app)  # Pass the Flask app instance to the main window
         else:  # Failed (Validation failed)
             error_message = response.json().get("message", "Unknown error")
             messagebox.showerror("Login Failed", error_message)
