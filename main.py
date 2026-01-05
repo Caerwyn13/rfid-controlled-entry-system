@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 import requests
-import mainwindow
+import window
 from flaskr import create_app 
 
 # Initialize Flask app instance
