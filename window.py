@@ -71,6 +71,9 @@ class ResultView:
             i += 1
             tree.insert("", "end", values=row, tags=(tag,))
 
+        tree.tag_configure('oddrow', background="white")
+        tree.tag_configure('evenrow', background="blue")
+
 
 class App:
     def __init__(self, username, flask_app):
@@ -231,11 +234,7 @@ class App:
             "Treeview.Heading",
             font=FONT_BOLD
         )
-        self.style.map(
-            "Treeview",
-            background=[("selected", "#0078d7")],
-            foreground=[("selected", "#ffffff")]
-        )
+
 
     def run(self):
         self.root.mainloop()
