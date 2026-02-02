@@ -37,7 +37,7 @@ def validate_login():
 
         if response.status_code == 200:  # Success (Validation passed)
             root.destroy()  # Close the login window
-            mainwindow.main(userid, flask_app)  # Pass the Flask app instance to the main window
+            window.main(userid, flask_app)  # Pass the Flask app instance to the main window
         else:  # Failed (Validation failed)
             error_message = response.json().get("message", "Unknown error")
             messagebox.showerror("Login Failed", error_message)
