@@ -5,8 +5,9 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 import requests
 import flaskr
 
-window_scale = 3.5
-
+WINDOW_SCALE = 3.5
+FONT = ("Helvetica", 10)
+FONT_BOLD = ("Helvetica", 10, "bold")
 
 class ResultView:
     """Encapsulates a unique scrollable Treeview for each tab"""
@@ -42,21 +43,33 @@ class ResultView:
         self.clear()
 
         if isinstance(results, str):
-            tk.Label(self.frame, text=results, font=("Helvetica", 12)).grid(padx=15, pady=10)
+            ttk.Label(self.frame, text=results, font=("Helvetica", 12)).grid(padx=15, pady=10)
             return
 
-        tree = ttk.Treeview(self.frame, show="headings")
-        tree.grid(sticky="nsew")
+        tree = ttk.Treeview(
+            self.frame,
+            style="Treeview",
+            show="headings"
+            )
+        tree.tag_configure("oddrow", background="#f5f5f5")
+        tree.tag_configure("even_row", background="#ffffff")
+        tree.grid(row=0, column=0, sticky="nsew")
 
+        if not results:
+            results = ["No entries match your query"]
+        
         columns = [f"Column {i+1}" for i in range(len(results[0]))]
         tree["columns"] = columns
 
         for col in columns:
             tree.heading(col, text=col)
-            tree.column(col, anchor="center")
+            tree.column(col, anchor="center", stretch=True)
 
+        i = 0
         for row in results:
-            tree.insert("", "end", values=row)
+            tag = "evenrow" if i % 2 == 0 else "oddrow"
+            i += 1
+            tree.insert("", "end", values=row, tags=(tag,))
 
 
 class App:
@@ -69,6 +82,9 @@ class App:
         self.root.geometry(self._center_window())
         self.root.iconbitmap("assets/main_window.ico")
 
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+
         self.tab_control = ttk.Notebook(self.root)
         self.tab_control.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
 
@@ -78,19 +94,27 @@ class App:
             "Database": ttk.Frame(self.tab_control),
         }
 
+        # Setup tabs for treeview to fill screen
+        self.tabs["Querying"].grid_rowconfigure(0, weight=1)
+        self.tabs["Querying"].grid_columnconfigure(0, weight=1)
+        self.tabs["Database"].grid_rowconfigure(0, weight=1)
+        self.tabs["Database"].grid_columnconfigure(0, weight=1)
+
         for name, tab in self.tabs.items():
             self.tab_control.add(tab, text=name)
 
         self.result_views = {}
+        self.style = ttk.Style()
 
         self._setup_home()
         self._setup_query_tab()
         self._setup_database_tab()
         self._greet()
+        self._setup_styles()
 
     def _center_window(self):
-        w = int(300 * window_scale)
-        h = int(200 * window_scale)
+        w = int(300 * WINDOW_SCALE)
+        h = int(200 * WINDOW_SCALE)
         sw = self.root.winfo_screenwidth()
         sh = self.root.winfo_screenheight()
         return f"{w}x{h}+{(sw-w)//2}+{(sh-h)//2}"
@@ -120,16 +144,18 @@ class App:
     def _setup_query_tab(self):
         tab = self.tabs["Querying"]
 
-        tk.Label(tab, text="Enter SQL Query:", font=("Helvetica", 12)).grid(row=0, column=0, padx=10, pady=10)
-        self.query_entry = tk.Entry(tab, font=("Helvetica", 12), width=50)
+        ttk.Label(tab, text="Enter SQL Query:", font=("Helvetica", 12)).grid(row=0, column=0, padx=10, pady=10)
+        self.query_entry = ttk.Entry(
+            tab, 
+            style="Custom.TEntry", 
+            width=50)
         self.query_entry.grid(row=0, column=1, padx=10, pady=10)
 
-        tk.Button(
+        ttk.Button(
             tab,
             text="Run Query",
-            command=lambda: self.run_query(self.query_entry.get(), tab),
-            bg="#4CAF50",
-            fg="white"
+            style="Custom.TButton",
+            command=lambda: self.run_query(self.query_entry.get(), tab)
         ).grid(row=1, column=0, columnspan=2, pady=10)
 
         self.result_views[tab] = ResultView(tab)
@@ -139,13 +165,14 @@ class App:
     def _setup_database_tab(self):
         tab = self.tabs["Database"]
 
-        self.table_var = tk.StringVar(value="users")
-        tables = ["users", "departments", "accesslog"]
+        self.table_var = tk.StringVar(value="Users")
+        tables = ["Users", "Departments", "Accesslog"]
 
         ttk.OptionMenu(tab, self.table_var, tables[0], *tables).grid(row=0, column=0, padx=10)
         ttk.Button(
             tab,
             text="View Table",
+            style="Custom.TButton",
             command=lambda: self.run_query(
                 f"SELECT * FROM {self.table_var.get()}",
                 tab
@@ -179,9 +206,47 @@ class App:
                 lambda: messagebox.showerror("Error", str(e))
             )
 
+    # ---------------- CUSTOM STYLING ---------------- #
+
+    def _setup_styles(self):
+        self.style.configure(
+            "Custom.TButton",
+            font=FONT,
+            padding=10
+        )
+        self.style.configure(
+            "Custom.TEntry",
+            padding=6,
+            font=FONT
+        )
+
+        self.style.configure(
+            "Treeview",
+            font=FONT,
+            rowheight=26,
+            background="#ffffff",
+            fieldbackground="#ffffff"
+        )
+        self.style.configure(
+            "Treeview.Heading",
+            font=FONT_BOLD
+        )
+        self.style.map(
+            "Treeview",
+            background=[("selected", "#0078d7")],
+            foreground=[("selected", "#ffffff")]
+        )
+
     def run(self):
         self.root.mainloop()
 
 
 def main(username, flask_app):
     App(username, flask_app).run()
+
+
+
+# DEBUG - REMOVE IN PRODUCTION
+if __name__ == "__main__":
+    from flaskr import create_app 
+    App("admin", create_app()).run()
