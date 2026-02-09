@@ -33,7 +33,29 @@ def get_days_in_quarter():
 
 def BarchartPlot(app):
     # Test data to plot
-    x = ['Accounting', 'IT', 'Security', 'Janitorial']
+    # TODO: Fix the way this is layed out to show accesses per department
+    #       And make it look better
+    x = [
+        'Administration',
+        'Marketing',
+        'Purchasing',
+        'Human Resources',
+        'Shipping',
+        'IT',
+        'Public Relations',
+        'Sales',
+        'Executive',
+        'Finance',
+        'Accounting',
+        'Treasury',
+        'Shareholder Services',
+        'Manufacturing',
+        'Contracting',
+        'Operational Security',
+        'NOC',
+        'Helpdesk',
+        'Recruiting'
+    ]
     
     # Get access counts
     with app.app_context():
@@ -59,29 +81,29 @@ def BarchartPlot(app):
     # Create the figure for the bar chart
     fig = Figure(figsize=(10, 8), dpi=100)
     
-    ax1 = fig.add_subplot(2, 2, 1)  # 2 rows, 2 columns, position 1
-    ax1.bar(x, y1, color='blue')
-    ax1.set_title('Accesses today')
-    ax1.set_xlabel('Departments')
-    ax1.set_ylabel('Authorised Accesses')
+    chart1 = fig.add_subplot(2, 2, 1)  # 2 rows, 2 columns, position 1
+    chart1.bar(x, y1, color='blue')
+    chart1.set_title('Accesses today')
+    chart1.set_xlabel('Departments')
+    chart1.set_ylabel('Authorised Accesses')
 
-    ax2 = fig.add_subplot(2, 2, 2)  # 2 rows, 2 columns, position 2
-    ax2.bar(x, y2, color='red')
-    ax2.set_title('Accesses this week')
-    ax2.set_xlabel('Departments')
-    ax2.set_ylabel('Authorised Accesses')
+    chart2 = fig.add_subplot(2, 2, 2)  # 2 rows, 2 columns, position 2
+    chart2.bar(x, y2, color='red')
+    chart2.set_title('Accesses this week')
+    chart2.set_xlabel('Departments')
+    chart2.set_ylabel('Authorised Accesses')
 
-    ax3 = fig.add_subplot(2, 2, 3)  # 2 rows, 2 columns, position 3
-    ax3.bar(x, y3, color='purple')
-    ax3.set_title('Accesses this quarter')
-    ax3.set_xlabel('Departments')
-    ax3.set_ylabel('Authorised Accesses')
+    chart3 = fig.add_subplot(2, 2, 3)  # 2 rows, 2 columns, position 3
+    chart3.bar(x, y3, color='purple')
+    chart3.set_title('Accesses this quarter')
+    chart3.set_xlabel('Departments')
+    chart3.set_ylabel('Authorised Accesses')
 
-    ax4 = fig.add_subplot(2, 2, 4)  # 2 rows, 2 columns, position 4
-    ax4.bar(x, y4, color='green')
-    ax4.set_title('Average accesses / day')
-    ax4.set_xlabel('Departments')
-    ax4.set_ylabel('Authorised Accesses')
+    chart4 = fig.add_subplot(2, 2, 4)  # 2 rows, 2 columns, position 4
+    chart4.bar(x, y4, color='green')
+    chart4.set_title('Average accesses / day')
+    chart4.set_xlabel('Departments')
+    chart4.set_ylabel('Authorised Accesses')
 
     fig.tight_layout(pad=3)  # Adjust layout to prevent overlap
     return fig
