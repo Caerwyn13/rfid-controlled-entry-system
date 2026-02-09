@@ -441,7 +441,7 @@ class App:
             "Custom.TNotebook.Tab",
             background=[("selected", COLOURS["primary"])],
             foreground=[
-                ("selected", "white"),
+                ("selected", "blue"),
                 ("!selected", COLOURS["text"])
             ]
         )
@@ -477,7 +477,7 @@ class App:
             font=FONT_BOLD,
             padding=(20, 10),
             background=COLOURS["primary"],
-            foreground="white",
+            foreground="black",
             borderwidth=0
         )
 
