@@ -8,6 +8,7 @@ import flaskr.querying as querying
 
 
 # Separate const because it's too long
+# Generated with the help of ChatGPT because God only knows how this works
 QUARTER_QUERY = """
     SELECT COUNT(*) 
     FROM accessLog
