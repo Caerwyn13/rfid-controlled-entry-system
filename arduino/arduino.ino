@@ -1,163 +1,197 @@
 #include <Arduino.h>
-#include <EEPROM.h>
-#include <ESP8266WiFi.h>
+#include <Preferences.h>
+#include <WiFi.h>
 #include <MFRC522.h>
 #include <SPI.h>
 
-#define SS_PIN 10
-#define RST_PIN 9
+// == Pin definitions =========================================
+#define SS_PIN    5
+#define RST_PIN   27
+#define GREEN_LED 26
+#define RED_LED   25
 
-#define GREEN_LED 7
-#define RED_LED 6
+// == UID / NVS storage constants =============================
+#define MAX_UID_LEN  10
+#define SLOT_SIZE    (1 + MAX_UID_LEN + 1)
+#define MAX_SLOTS    50
 
-#define MAX_UID_LEN 10                           // Maximum supported UID length for RFID keys
-#define SLOT_SIZE (1 + MAX_UID_LEN + 1)          // [len][uid (padded to MAX_UID_LEN)][checksum]
-#define MAX_SLOTS (EEPROM.length() / SLOT_SIZE)
+// == Network configuration ===================================
+const char* host = "192.168.1.50";   // Private server IP
+const uint16_t port = 5000;         // Private API port
 
-// Set up RFID reader
-MFRC522 mfrc522(SS_PIN, RST_PIN);
+// == Objects =================================================
+MFRC522     mfrc522(SS_PIN, RST_PIN);
+WiFiClient  client;
+Preferences prefs;
 
-//TODO: Replace with actual SSID and Password
-const char* ssid = "SSID";
-const char* pass = "Password";
+// WiFi credentials loaded from NVS
+String ssid;
+String pass;
 
-WifiClient client;
-const char* host = "1.1.1.1";       // Replace with PC's IP
-const uint16_t port = 12345;        // Replace with actual port
 
+// ============================================================
+// setup()
+// ============================================================
 void setup() {
-  Serial.begin(9600);
-  while (!Serial) { ; }             // Wait for Serial to connect
-  
-  WiFi.begin(ssid, pass);
-  SPI.begin();
-  mfrc522.PCD_init();
+  Serial.begin(115200);
 
-  pinMode(LED_BUILTIN, OUTPUT);
+  SPI.begin();
+  mfrc522.PCD_Init();
+
   pinMode(GREEN_LED, OUTPUT);
   pinMode(RED_LED, OUTPUT);
 
-  Serial.println("Connecting to WiFi...");
-  while (WiFi.status() != WL_CONNECTED) { ; }    // Loop to stop progression until WiFi is connected
-  Serial.println("Connected to WiFi!");
+  prefs.begin("rfid_keys", false);
+
+  // Load WiFi credentials from NVS
+  ssid = prefs.getString("wifi_ssid", "");
+  pass = prefs.getString("wifi_pass", "");
+
+  if (ssid == "" || pass == "") {
+    Serial.println("WiFi credentials not set in NVS!");
+    Serial.println("Use prefs.putString(\"wifi_ssid\", \"yourSSID\") once to provision.");
+    while (true) delay(1000);
+  }
+
+  WiFi.begin(ssid.c_str(), pass.c_str());
+  Serial.print("Connecting to WiFi");
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nConnected!");
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
 }
 
+
+// ============================================================
+// loop()
+// ============================================================
 void loop() {
-  // Turn LEDs off
+
+  // Auto-reconnect WiFi
+  if (WiFi.status() != WL_CONNECTED) {
+    WiFi.reconnect();
+    delay(1000);
+    return;
+  }
+
   digitalWrite(GREEN_LED, LOW);
   digitalWrite(RED_LED, LOW);
 
-  // Look for new cards
-  if (!mfrc522.PICC_IsNewCardPresent()) { return; }    // No card, so return, and don't send data
+  if (!mfrc522.PICC_IsNewCardPresent()) return;
+  if (!mfrc522.PICC_ReadCardSerial())   return;
 
-  // Select one of the cards
-  if (!mfrc522.PICC_ReadCardSerial()) { return; }
-
-  // Show UID on serial monitor
-  Serial.print("UID tag: ");
   String content = "";
-  byte letter;
   for (byte i = 0; i < mfrc522.uid.size; i++) {
-    Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-    Serial.print(mfrc522.uid.uidByte[i], HEX);
-    content.concat(String(mfrc522.uid.uidByte[i] > 0x10 ? " 0" : " "));
-    content.concat(String(mfrc522.uid.uidByte[i], HEX));
+    if (mfrc522.uid.uidByte[i] < 0x10) content += "0";
+    content += String(mfrc522.uid.uidByte[i], HEX);
   }
-  Serial.println();
-
-  // Show whether RFID card was accepted
   content.toUpperCase();
-  if (content.substring(1) == "BD 31 15 2B") {  //TODO: Replace with EEPROM list of authorised cards
+
+  bool granted = isAuthorised(mfrc522.uid.uidByte, mfrc522.uid.size);
+
+  if (granted) {
     Serial.println("Access granted");
-    Serial.println();
     digitalWrite(GREEN_LED, HIGH);
   } else {
     Serial.println("Access denied");
-    Serial.println();
     digitalWrite(RED_LED, HIGH);
-  
-  if (client.connect(host, port)) {
-    client.println("Hello!");    //TODO: Replace with data to send
   }
-  delay(2000);    // Send data every 2 seconds
+
+  sendAccessEvent(content, granted);
+
+  mfrc522.PICC_HaltA();
+  delay(2000);
 }
 
-void zeroOutEEPROM() {
-  for (int i = 0; i < EEPROM.length(); ++i) {
-    EEPROM.write(i, 0);
+
+// ============================================================
+// sendAccessEvent()
+// ============================================================
+void sendAccessEvent(const String& uid, bool granted) {
+
+  if (!client.connect(host, port)) {
+    Serial.println("Server unreachable");
+    return;
   }
+
+  // UID, Granted(1/0), Timestamp, Device Token
+  String payload = uid + "," +
+                   String(granted ? 1 : 0) + "," +
+                   String(millis()) + "," +
+                   deviceToken + "\n";
+
+  client.print(payload);
+  client.stop();
+
+  Serial.print("Sent: ");
+  Serial.println(payload);
 }
 
-// Helper function to compute 1-byte checksum (XOR of length + UID bytes)
+
+// ============================================================
+// NVS helpers (unchanged)
+// ============================================================
+
 uint8_t computeChecksum(const uint8_t* data, uint8_t len) {
-  uint8_t cs = 0;
-
-  // Include len in checksum so len corruption is detected
-  cs ^= len;
+  uint8_t cs = len;
   for (uint8_t i = 0; i < len; ++i) cs ^= data[i];
   return cs;
 }
 
-// Validate slot index (returns true if slot fits in EEPROM)
 bool validSlot(uint16_t slot) {
-  if (slot >= MAX_SLOTS) return false;
-  uint16_t addr = slot * SLOT_SIZE;
-  return (addr + SLOT_SIZE) <= EEPROM.length();
+  return slot < MAX_SLOTS;
 }
 
-// Write a UID to the given slot
-// Return value is whether it was successful
-bool writeRFIDtoEEPROM(uint16_t slot, const uint8_t* uid, uint8_t uidLen) {
+String slotKey(uint16_t slot) {
+  return "slot_" + String(slot);
+}
+
+bool writeRFIDtoNVS(uint16_t slot, const uint8_t* uid, uint8_t uidLen) {
   if (!validSlot(slot)) return false;
   if (uidLen == 0 || uidLen > MAX_UID_LEN) return false;
 
-  uint16_t base = slot * SLOT_SIZE;
-  uint8_t checksum = computeChecksum(uid, uidLen);
+  uint8_t blob[SLOT_SIZE] = {};
+  blob[0] = uidLen;
+  for (uint8_t i = 0; i < uidLen; ++i) blob[1 + i] = uid[i];
+  blob[1 + MAX_UID_LEN] = computeChecksum(uid, uidLen);
 
-  // Write length
-  EEPROM.update(base + 0, uidLen);
-
-  // Write bytes (pad remaining with 0)
-  for (uint8_t i = 0; i < MAX_UID_LEN; ++i) {
-    uint8_t b = (i < uidLen) ? uid[i] : 0;
-    EEPROM.update(base + 1 + i, b);
-  }
-
-  // Write checksum
-  EEPROM.update(base + 1 + MAX_UID_LEN, checksum);
-
+  prefs.putBytes(slotKey(slot).c_str(), blob, SLOT_SIZE);
   return true;
 }
 
-// Read a UID from a slot
-// Return value is whether it was successful
-bool readRFIDFromEEPROM(uint16_t slot, uint8_t* outUid, uint8_t* outLen, bool zeroOut) {
+bool readRFIDFromNVS(uint16_t slot, uint8_t* outUid, uint8_t* outLen) {
   if (!validSlot(slot)) return false;
 
-  uint16_t base = slot * SLOT_SIZE;
-  uint8_t len = EEPROM.read(base + 0);
-  if (len == 0 || len > MAX_UID_LEN) {
-    // 0 => empty slot or invalid length
-    return false;
-  }
+  uint8_t blob[SLOT_SIZE] = {};
+  size_t read = prefs.getBytes(slotKey(slot).c_str(), blob, SLOT_SIZE);
+  if (read != SLOT_SIZE) return false;
 
-  // Read UID
-  for (uint8_t i = 0; i < len; ++i) {
-    outUid[i] = EEPROM.read(base + 1 + i);
-  }
+  uint8_t len = blob[0];
+  if (len == 0 || len > MAX_UID_LEN) return false;
 
-  // zero out the rest (optional)
-  if (zeroOut) {
-    for (uint8_t i = len; i < MAX_UID_LEN; ++i) outUid[i] = 0;
-  }
+  for (uint8_t i = 0; i < len; ++i) outUid[i] = blob[1 + i];
 
-  uint8_t storedCs = EEPROM.read(base + 1 + MAX_UID_LEN);
-  uint8_t calcCs = computeChecksum(outUid, len);
-  if (storedCs != calcCs) {
-    // Checksum invalid => corrupted UID
-    return false;
-  }
+  uint8_t storedCs = blob[1 + MAX_UID_LEN];
+  uint8_t calcCs   = computeChecksum(outUid, len);
+  if (storedCs != calcCs) return false;
 
   *outLen = len;
   return true;
+}
+
+bool isAuthorised(const uint8_t* scannedUid, uint8_t scannedLen) {
+  uint8_t storedUid[MAX_UID_LEN];
+  uint8_t storedLen;
+
+  for (uint16_t s = 0; s < MAX_SLOTS; ++s) {
+    if (!readRFIDFromNVS(s, storedUid, &storedLen)) continue;
+    if (storedLen != scannedLen) continue;
+    if (memcmp(storedUid, scannedUid, scannedLen) == 0) return true;
+  }
+  return false;
 }
